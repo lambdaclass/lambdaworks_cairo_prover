@@ -27,3 +27,4 @@ rstest = "0.17.0"
 [features]
 test_fiat_shamir = []
 metal = ["lambdaworks-fft/metal"]
+cuda = ["lambdaworks-fft/cuda"]

@@ -634,121 +634,140 @@ where
 
 #[cfg(test)]
 mod tests {
-    use lambdaworks_math::{
-        field::{
-            element::FieldElement, fields::fft_friendly::stark_252_prime_field::Stark252PrimeField,
-            traits::IsFFTField,
-        },
-        polynomial::Polynomial,
-    };
-
-    use crate::{
-        air::{
-            context::{AirContext, ProofOptions},
-            example::simple_fibonacci,
-            trace::TraceTable,
-        },
-        Domain,
-    };
-
-    use super::evaluate_polynomial_on_lde_domain;
-
+    use lambdaworks_math::field::element::FieldElement;
+    use lambdaworks_math::field::fields::fft_friendly::stark_252_prime_field::Stark252PrimeField;
     pub type FE = FieldElement<Stark252PrimeField>;
 
-    #[test]
-    fn test_domain_constructor() {
-        let trace = simple_fibonacci::fibonacci_trace([FE::from(1), FE::from(1)], 8);
-        let trace_length = trace[0].len();
-        let trace_table = TraceTable::new_from_cols(&trace);
-        let coset_offset = 3;
-        let blowup_factor: usize = 2;
-
-        let context = AirContext {
-            options: ProofOptions {
-                blowup_factor: blowup_factor as u8,
-                fri_number_of_queries: 1,
-                coset_offset,
+    mod all {
+        use lambdaworks_math::{
+            field::{
+                element::FieldElement,
+                fields::fft_friendly::stark_252_prime_field::Stark252PrimeField,
+                traits::IsFFTField,
             },
-            trace_length,
-            trace_columns: trace_table.n_cols,
-            transition_degrees: vec![1],
-            transition_exemptions: vec![2],
-            transition_offsets: vec![0, 1, 2],
-            num_transition_constraints: 1,
+            polynomial::Polynomial,
         };
 
-        let domain = Domain::new(&simple_fibonacci::FibonacciAIR::from(context));
-        assert_eq!(domain.blowup_factor, 2);
-        assert_eq!(domain.interpolation_domain_size, trace_length);
-        assert_eq!(domain.root_order, trace_length.trailing_zeros());
-        assert_eq!(
-            domain.lde_root_order,
-            (trace_length * blowup_factor).trailing_zeros()
-        );
-        assert_eq!(domain.coset_offset, FieldElement::from(coset_offset));
+        use super::super::evaluate_polynomial_on_lde_domain;
+        use super::FE;
+        use crate::{
+            air::{
+                context::{AirContext, ProofOptions},
+                example::simple_fibonacci,
+                trace::TraceTable,
+            },
+            Domain,
+        };
 
-        let primitive_root = Stark252PrimeField::get_primitive_root_of_unity(
-            (trace_length * blowup_factor).trailing_zeros() as u64,
-        )
-        .unwrap();
+        #[test]
+        fn test_domain_constructor() {
+            let trace = simple_fibonacci::fibonacci_trace([FE::from(1), FE::from(1)], 8);
+            let trace_length = trace[0].len();
+            let trace_table = TraceTable::new_from_cols(&trace);
+            let coset_offset = 3;
+            let blowup_factor: usize = 2;
 
-        assert_eq!(
-            domain.trace_primitive_root,
-            primitive_root.pow(blowup_factor)
-        );
-        for i in 0..(trace_length * blowup_factor) {
+            let context = AirContext {
+                options: ProofOptions {
+                    blowup_factor: blowup_factor as u8,
+                    fri_number_of_queries: 1,
+                    coset_offset,
+                },
+                trace_length,
+                trace_columns: trace_table.n_cols,
+                transition_degrees: vec![1],
+                transition_exemptions: vec![2],
+                transition_offsets: vec![0, 1, 2],
+                num_transition_constraints: 1,
+            };
+
+            let domain = Domain::new(&simple_fibonacci::FibonacciAIR::from(context));
+            assert_eq!(domain.blowup_factor, 2);
+            assert_eq!(domain.interpolation_domain_size, trace_length);
+            assert_eq!(domain.root_order, trace_length.trailing_zeros());
             assert_eq!(
-                domain.lde_roots_of_unity_coset[i],
-                FieldElement::from(coset_offset) * primitive_root.pow(i)
+                domain.lde_root_order,
+                (trace_length * blowup_factor).trailing_zeros()
             );
-        }
-    }
+            assert_eq!(domain.coset_offset, FieldElement::from(coset_offset));
 
-    #[test]
-    fn test_evaluate_polynomial_on_lde_domain_on_trace_polys() {
-        let trace = simple_fibonacci::fibonacci_trace([FE::from(1), FE::from(1)], 8);
-        let trace_length = trace[0].len();
-        let trace_table = TraceTable::new_from_cols(&trace);
-        let trace_polys = trace_table.compute_trace_polys();
-        let coset_offset = FE::from(3);
-        let blowup_factor: usize = 2;
-        let domain_size = 8;
+            let primitive_root = Stark252PrimeField::get_primitive_root_of_unity(
+                (trace_length * blowup_factor).trailing_zeros() as u64,
+            )
+            .unwrap();
 
-        let primitive_root = Stark252PrimeField::get_primitive_root_of_unity(
-            (trace_length * blowup_factor).trailing_zeros() as u64,
-        )
-        .unwrap();
-
-        for poly in trace_polys.iter() {
-            let lde_evaluation =
-                evaluate_polynomial_on_lde_domain(poly, blowup_factor, domain_size, &coset_offset)
-                    .unwrap();
-            assert_eq!(lde_evaluation.len(), trace_length * blowup_factor);
-            for (i, evaluation) in lde_evaluation.iter().enumerate() {
+            assert_eq!(
+                domain.trace_primitive_root,
+                primitive_root.pow(blowup_factor)
+            );
+            for i in 0..(trace_length * blowup_factor) {
                 assert_eq!(
-                    *evaluation,
-                    poly.evaluate(&(&coset_offset * primitive_root.pow(i)))
+                    domain.lde_roots_of_unity_coset[i],
+                    FieldElement::from(coset_offset) * primitive_root.pow(i)
                 );
+            }
+        }
+
+        #[test]
+        fn test_evaluate_polynomial_on_lde_domain_on_trace_polys() {
+            let trace = simple_fibonacci::fibonacci_trace([FE::from(1), FE::from(1)], 8);
+            let trace_length = trace[0].len();
+            let trace_table = TraceTable::new_from_cols(&trace);
+            let trace_polys = trace_table.compute_trace_polys();
+            let coset_offset = FE::from(3);
+            let blowup_factor: usize = 2;
+            let domain_size = 8;
+
+            let primitive_root = Stark252PrimeField::get_primitive_root_of_unity(
+                (trace_length * blowup_factor).trailing_zeros() as u64,
+            )
+            .unwrap();
+
+            for poly in trace_polys.iter() {
+                let lde_evaluation = evaluate_polynomial_on_lde_domain(
+                    poly,
+                    blowup_factor,
+                    domain_size,
+                    &coset_offset,
+                )
+                .unwrap();
+                assert_eq!(lde_evaluation.len(), trace_length * blowup_factor);
+                for (i, evaluation) in lde_evaluation.iter().enumerate() {
+                    assert_eq!(
+                        *evaluation,
+                        poly.evaluate(&(&coset_offset * primitive_root.pow(i)))
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn test_evaluate_polynomial_on_lde_domain_edge_case() {
+            let poly = Polynomial::new_monomial(FE::one(), 8);
+            let blowup_factor: usize = 4;
+            let domain_size: usize = 8;
+            let offset = FE::from(3);
+            let evaluations =
+                evaluate_polynomial_on_lde_domain(&poly, blowup_factor, domain_size, &offset)
+                    .unwrap();
+            assert_eq!(evaluations.len(), domain_size * blowup_factor);
+
+            let primitive_root: FE = Stark252PrimeField::get_primitive_root_of_unity(
+                (domain_size * blowup_factor).trailing_zeros() as u64,
+            )
+            .unwrap();
+            for (i, eval) in evaluations.iter().enumerate() {
+                assert_eq!(*eval, poly.evaluate(&(&offset * &primitive_root.pow(i))));
             }
         }
     }
 
-    #[test]
-    fn test_evaluate_polynomial_on_lde_domain_edge_case() {
-        let poly = Polynomial::new_monomial(FE::one(), 8);
-        let blowup_factor: usize = 4;
-        let domain_size: usize = 8;
-        let offset = FE::from(3);
-        let evaluations =
-            evaluate_polynomial_on_lde_domain(&poly, blowup_factor, domain_size, &offset).unwrap();
-        assert_eq!(evaluations.len(), domain_size * blowup_factor);
+    #[cfg(not(any(feature = "metal", feature = "cuda")))]
+    mod cpu {}
 
-        let primitive_root: FE = Stark252PrimeField::get_primitive_root_of_unity(
-            (domain_size * blowup_factor).trailing_zeros() as u64,
-        )
-        .unwrap();
-        for (i, eval) in evaluations.iter().enumerate() {
-            assert_eq!(*eval, poly.evaluate(&(&offset * &primitive_root.pow(i))));
-        }
-    }
+    #[cfg(feature = "cuda")]
+    mod cuda {}
+
+    #[cfg(feature = "metal")]
+    mod metal {}
 }
