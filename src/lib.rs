@@ -15,6 +15,10 @@ use lambdaworks_math::field::{
     traits::{IsFFTField, IsField},
 };
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 pub struct ProofConfig {
     pub count_queries: usize,
     pub blowup_factor: usize,

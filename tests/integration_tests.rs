@@ -61,6 +61,8 @@ fn test_prove_fib() {
 
 #[test_log::test]
 fn test_prove_fib17() {
+    let _profiler = dhat::Profiler::builder().testing().build();
+
     let trace = simple_fibonacci::fibonacci_trace([FE17::from(1), FE17::from(1)], 4);
 
     let context = AirContext {
@@ -81,6 +83,8 @@ fn test_prove_fib17() {
 
     let result = prove(&trace, &fibonacci_air, &mut ()).unwrap();
     assert!(verify(&result, &fibonacci_air, &()));
+    let stats = dhat::HeapStats::get();
+    println!("stats: {:?}", stats);
 }
 
 #[test_log::test]
