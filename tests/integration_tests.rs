@@ -5,10 +5,10 @@ use lambdaworks_stark::{
     cairo::{
         air::{
             CairoAIR, MemorySegment, MemorySegmentMap, PublicInputs, FRAME_DST_ADDR,
-            FRAME_OP0_ADDR, FRAME_OP1_ADDR, FRAME_PC,
+            FRAME_OP0_ADDR, FRAME_OP1_ADDR, FRAME_PC, FRAME_SELECTOR,
         },
         cairo_layout::CairoLayout,
-        execution_trace::build_main_trace,
+        execution_trace::{build_main_trace, MEMORY_COLUMNS},
         runner::run::{
             cairo0_program_path, cairo1_program_path, generate_prover_args, run_program,
             CairoVersion,
@@ -281,6 +281,86 @@ fn test_verifier_rejects_proof_with_different_range_bounds() {
 
     public_input.range_check_min = Some(public_input.range_check_min.unwrap() - 1);
     public_input.range_check_max = Some(public_input.range_check_max.unwrap() - 1);
+    assert!(!verify(&result, &cairo_air, &public_input));
+}
+
+#[test_log::test]
+fn test_verifier_accepts_proof_of_a_slightly_different_program_with_disabled_frame_selector() {
+    // This program does something if a variable `x` is 5 and does something different otherwise.
+    // It sets `x` to 5.
+    let program_content = std::fs::read(cairo0_program_path("conditional.json")).unwrap();
+    let (mut main_trace, cairo_air, mut public_input) =
+        generate_prover_args(&program_content, &CairoVersion::V0, &None, GRINDING_FACTOR).unwrap();
+
+    // We set frame selector to zero on every row
+    for row_idx in 0..main_trace.n_rows() {
+        let frame_selector_idx = row_idx * main_trace.n_cols + FRAME_SELECTOR;
+        main_trace.table[frame_selector_idx] = FE::zero();
+    }
+
+    // We modify the original program and the main trace so `let x = 5;` turns into `let x = 10;`
+    let x_is_five_inst_addr = FE::from(12);
+    let new_x_value = FE::from(10);
+
+    // First we modify the original program
+    let mut corrupted_program = public_input.public_memory.clone();
+    corrupted_program.insert(x_is_five_inst_addr.clone(), new_x_value.clone());
+    public_input.public_memory = corrupted_program;
+
+    // Then we modify the main trace
+    let memory_addrs_cols = main_trace.get_cols(&MEMORY_COLUMNS[..4]);
+    let mut memory_addr_col = 0;
+    let mut memory_row = 0;
+    for (idx, cell) in memory_addrs_cols.table.iter().enumerate() {
+        if cell == &x_is_five_inst_addr {
+            memory_addr_col = idx % memory_addrs_cols.n_cols;
+            memory_row = idx / memory_addrs_cols.n_cols;
+        }
+    }
+    let memory_value_col = memory_addr_col + MEMORY_COLUMNS[4];
+    let memory_value_idx = memory_row * main_trace.n_cols + memory_value_col;
+    main_trace.table[memory_value_idx] = new_x_value;
+
+    let result = prove(&main_trace, &cairo_air, &mut public_input).unwrap();
+
+    // The verifier will accept because the entire frame selector column is zero
+    assert!(verify(&result, &cairo_air, &public_input));
+}
+
+#[test_log::test]
+fn test_verifier_rejects_proof_of_a_slightly_different_program_with_enabled_frame_selector() {
+    // This program does something if a variable `x` is 5 and does something different otherwise.
+    // It sets `x` to 5.
+    let program_content = std::fs::read(cairo0_program_path("conditional.json")).unwrap();
+    let (mut main_trace, cairo_air, mut public_input) =
+        generate_prover_args(&program_content, &CairoVersion::V0, &None, GRINDING_FACTOR).unwrap();
+
+    // We modify the original program and the main trace so `let x = 5;` turns into `let x = 10;`
+    let x_is_five_inst_addr = FE::from(12);
+    let new_x_value = FE::from(10);
+
+    // First we modify the original program
+    let mut corrupted_program = public_input.public_memory.clone();
+    corrupted_program.insert(x_is_five_inst_addr.clone(), new_x_value.clone());
+    public_input.public_memory = corrupted_program;
+
+    // Then we modify the main trace
+    let memory_addrs_cols = main_trace.get_cols(&MEMORY_COLUMNS[..4]);
+    let mut memory_addr_col = 0;
+    let mut memory_row = 0;
+    for (idx, cell) in memory_addrs_cols.table.iter().enumerate() {
+        if cell == &x_is_five_inst_addr {
+            memory_addr_col = idx % memory_addrs_cols.n_cols;
+            memory_row = idx / memory_addrs_cols.n_cols;
+        }
+    }
+    let memory_value_col = memory_addr_col + MEMORY_COLUMNS[4];
+    let memory_value_idx = memory_row * main_trace.n_cols + memory_value_col;
+    main_trace.table[memory_value_idx] = new_x_value;
+
+    let result = prove(&main_trace, &cairo_air, &mut public_input).unwrap();
+
+    // The verifier will reject because we didn't change the frame selector column
     assert!(!verify(&result, &cairo_air, &public_input));
 }
 
