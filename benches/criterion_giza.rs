@@ -48,7 +48,7 @@ fn cairo_benches(c: &mut Criterion) {
         "giza/fibonacci/1000",
         &cairo0_program_path("fibonacci_1000.json"),
         &cairo0_program_path("fibonacci_1000.trace"),
-        &cairo0_program_path("fibonacci_1000.memory"),
+        &cairo0_program_path("fibonacci_1000.mem"),
     );
 
     run_lambdaworks_bench(
@@ -63,7 +63,7 @@ fn cairo_benches(c: &mut Criterion) {
         "giza/fibonacci/10000",
         &cairo0_program_path("fibonacci_10000.json"),
         &cairo0_program_path("fibonacci_10000.trace"),
-        &cairo0_program_path("fibonacci_10000.memory"),
+        &cairo0_program_path("fibonacci_10000.mem"),
     );
 }
 

@@ -11,9 +11,19 @@ COMPILED_CAIRO0_PROGRAMS:=$(patsubst $(CAIRO0_PROGRAMS_DIR)/%.cairo, $(CAIRO0_PR
 # Otherwise, the cairo_compile docker image will be used
 # When using the docker version, be sure to build the image using `make docker_build_compiler`.
 $(CAIRO0_PROGRAMS_DIR)/%.json: $(CAIRO0_PROGRAMS_DIR)/%.cairo
-	@echo "Compiling Cairo program..."
+	@echo "Compiling Cairo program ..."
 	@cairo-compile --cairo_path="$(CAIRO0_PROGRAMS_DIR)" $< --output $@ 2> /dev/null || \
 	docker run --rm -v $(ROOT_DIR)/$(CAIRO0_PROGRAMS_DIR):/pwd/$(CAIRO0_PROGRAMS_DIR) cairo cairo-compile /pwd/$< > $@
+
+%.mem: %.json
+	@echo "Generating trace and memory ..."
+	@cairo-run --program $< --memory_file $@.mem --trace_file $@.trace 2> /dev/null || \
+	docker run --rm -v $(ROOT_DIR)/$(CAIRO0_PROGRAMS_DIR):/pwd/$(CAIRO0_PROGRAMS_DIR) cairo cairo-run --program /pwd/$< --memory_file /pwd/$@
+
+%.trace: %.json
+	@echo "Generating trace and memory ..."
+	@cairo-run --program $< --trace_file $@ 2> /dev/null || \
+	docker run --rm -v $(ROOT_DIR)/$(CAIRO0_PROGRAMS_DIR):/pwd/$(CAIRO0_PROGRAMS_DIR) cairo cairo-run --program /pwd/$< --trace_file /pwd/$@ 
 
 build: 
 	cargo build --release
@@ -52,8 +62,7 @@ benchmarks_parallel: $(COMPILED_CAIRO0_PROGRAMS)
 benchmarks_parallel_all: $(COMPILED_CAIRO0_PROGRAMS)
 	cargo bench -F parallel
 
-# TODO: add trace and memory rules
-benchmarks_giza: $(COMPILED_CAIRO0_PROGRAMS)
+benchmarks_giza: $(CAIRO0_PROGRAMS_DIR)/fibonacci_1000.mem $(CAIRO0_PROGRAMS_DIR)/fibonacci_10000.mem $(CAIRO0_PROGRAMS_DIR)/fibonacci_1000.trace $(CAIRO0_PROGRAMS_DIR)/fibonacci_10000.trace
 	cargo +nightly bench --bench criterion_giza -F "parallel giza"
 
 build_metal:
@@ -99,7 +108,7 @@ compile_and_prove: target/release/lambdaworks-stark
 clean:
 	rm -f $(CAIRO0_PROGRAMS_DIR)/*.json
 	rm -f $(CAIRO0_PROGRAMS_DIR)/*.trace
-	rm -f $(CAIRO0_PROGRAMS_DIR)/*.memory
+	rm -f $(CAIRO0_PROGRAMS_DIR)/*.mem
 
 CUDAFUZZER = deserialize
 fuzzer:
