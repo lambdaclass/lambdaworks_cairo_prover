@@ -9,11 +9,44 @@ We expect to have something working in a good state by mid August 2023.
 
 To be added:
 
-- Grinding ✔️
-- Skipping FRI layers
-- Optimizing verifier operations
-- Range-check ✔️ and Pedersen built-ins
-- Different layouts
+-  Add last constraint of Range Check Built In
+-  Add more parallelization
+-  Benchmarks and optimizations for Graviton
+-  Bitwise Builtin
+-  Cairo Verifier
+   - Batch verifier / For trees and N proofs
+-  Chiplet support
+-  Cuda with Icicle for FTT/NTT
+-  Different layouts
+-  DSL Plonk
+-  Extension fields in Starks
+-  Fix "enforce selector" security bug
+-  Fix benches against other Field libraries, so results are more stable
+-  HyperPlonk - Ultraplonk
+-  Improve profiling with multithread
+-  JSON serialization for proofs
+-  Optimizations
+  - Skip layers
+  - Stop FRI
+  - Batch FRI queries (improves proof size)
+  - Others
+-  Optimized backend for mini goldilocks
+-  Pedersen Builtin
+-  Pick hash configuration with ProofOptions
+-  Poseidon Builtin
+-  Poseidon Hash
+   - Poseidon Tree 
+   - Poseidon Batch Tree
+-  Proof of concept of Wasm application running the verifier
+-  Quality of life functions (to_decimal_string, from_decimal_string)
+-  Sha256 Builtin
+-  Sharp compatibility
+-  Solidity Verifier
+-  Support FFTx for CUDA
+-  Tracing tools
+-  Virtual columns
+-  Vulkan support for FFT
+-  Winterfell compatible API
 
 ## Requirements
 
