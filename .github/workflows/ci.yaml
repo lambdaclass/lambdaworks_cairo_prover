@@ -161,3 +161,23 @@ jobs:
 
       - name: Clean compiled programs
         run: make clean
+
+  test_nvidia:
+    name: Test (Ubuntu, NVIDIA GPU)
+    runs-on: [self-hosted, cuda]
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v3
+      - name: Rustup toolchain install
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Add CUDA binaries to PATH
+        run: |
+          echo /usr/local/cuda/bin >> $GITHUB_PATH
+
+      - name: Run tests
+        run: cargo test -F cuda
