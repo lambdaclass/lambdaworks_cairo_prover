@@ -252,14 +252,29 @@ pub fn generate_prover_args(
     let (register_states, memory, program_size, range_check_builtin_range) =
         run_program(None, cairo_layout, program_content, cairo_version)?;
 
-    let memory_segments = create_memory_segment_map(range_check_builtin_range, output_range);
-
-    let mut pub_inputs =
-        PublicInputs::from_regs_and_mem(&register_states, &memory, program_size, &memory_segments);
+    let mut pub_inputs = build_pub_inputs(
+        range_check_builtin_range,
+        output_range,
+        &register_states,
+        &memory,
+        program_size,
+    );
 
     let main_trace = build_main_trace(&register_states, &memory, &mut pub_inputs);
 
     Ok((main_trace, pub_inputs))
+}
+
+pub fn build_pub_inputs(
+    range_check_builtin_range: Option<Range<u64>>,
+    output_range: &Option<Range<u64>>,
+    register_states: &RegisterStates,
+    memory: &CairoMemory,
+    program_size: usize,
+) -> PublicInputs {
+    let memory_segments = create_memory_segment_map(range_check_builtin_range, output_range);
+
+    PublicInputs::from_regs_and_mem(register_states, memory, program_size, &memory_segments)
 }
 
 fn create_memory_segment_map(

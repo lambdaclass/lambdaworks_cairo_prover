@@ -2,7 +2,7 @@ use lambdaworks_math::field::fields::fft_friendly::stark_252_prime_field::Stark2
 use lambdaworks_math::traits::{Deserializable, Serializable};
 use lambdaworks_stark::cairo::air::{generate_cairo_proof, verify_cairo_proof, PublicInputs};
 use lambdaworks_stark::cairo::runner::run::{generate_prover_args, CairoVersion};
-use lambdaworks_stark::starks::proof::options::ProofOptions;
+use lambdaworks_stark::starks::proof::options::{ProofOptions, SecurityLevel};
 use lambdaworks_stark::starks::proof::stark::StarkProof;
 use std::env;
 use std::time::Instant;
@@ -32,7 +32,8 @@ fn generate_proof(
             return None;
         };
 
-    println!("  Time spent: {:?} \n", timer.elapsed());
+    println!("  Time spent: {:?}", timer.elapsed());
+    println!("  Generated main trace with {} rows\n", main_trace.n_rows());
 
     let timer = Instant::now();
     println!("Making proof ...");
@@ -44,7 +45,10 @@ fn generate_proof(
         }
     };
 
-    println!("Time spent in proving: {:?} \n", timer.elapsed());
+    println!("Time spent in proving: {:?}", timer.elapsed());
+
+    let proof_size = proof.serialize().len();
+    println!("Proof size: {} bytes\n", proof_size);
 
     Some((proof, pub_inputs))
 }
@@ -69,9 +73,29 @@ fn verify_proof(
     proof_verified
 }
 
-fn main() {
-    let proof_options = ProofOptions::default_test_options();
+fn get_proof_options(arg: Option<&String>) -> Option<ProofOptions> {
+    let default_coset_offset = ProofOptions::default_test_options().coset_offset;
 
+    match arg {
+        Some(arg) => {
+            if arg == "-s" {
+                println!("Using secure proof options");
+                Some(ProofOptions::new_secure(
+                    SecurityLevel::Conjecturable128Bits,
+                    default_coset_offset,
+                ))
+            } else {
+                None
+            }
+        }
+        None => Some(ProofOptions::new_secure(
+            SecurityLevel::Conjecturable80Bits,
+            default_coset_offset,
+        )),
+    }
+}
+
+fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -84,12 +108,13 @@ fn main() {
     match command.as_str() {
         "prove" => {
             if args.len() < 4 {
-                println!("Usage: cargo run prove <input_path> <output_path>");
+                println!("Usage: cargo run prove <input_path> <output_path> [-s]");
                 return;
             }
 
             let input_path = &args[2];
             let output_path = &args[3];
+            let Some(proof_options) = get_proof_options(args.get(4)) else { return; };
 
             let Some((proof, pub_inputs)) = generate_proof(input_path, &proof_options) else {
                 return;
@@ -109,11 +134,13 @@ fn main() {
         }
         "verify" => {
             if args.len() < 3 {
-                println!("Usage: cargo run verify <input_path>");
+                println!("Usage: cargo run verify <input_path> [-s]");
                 return;
             }
 
             let input_path = &args[2];
+            let Some(proof_options) = get_proof_options(args.get(3)) else { return; };
+
             let Ok(program_content) = std::fs::read(input_path) else {
                 println!("Error opening {input_path} file");
                 return;
@@ -144,11 +171,13 @@ fn main() {
         }
         "prove_and_verify" => {
             if args.len() < 3 {
-                println!("Usage: cargo run prove_and_verify <input_path>");
+                println!("Usage: cargo run prove_and_verify <input_path> [-s]");
                 return;
             }
 
             let input_path = &args[2];
+            let Some(proof_options) = get_proof_options(args.get(3)) else { return; };
+
             let Some((proof, pub_inputs)) = generate_proof(input_path, &proof_options) else {
                 return;
             };

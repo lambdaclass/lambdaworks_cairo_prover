@@ -51,6 +51,11 @@ harness = false
 metal = ["lambdaworks-math/metal"]
 
 [[bench]]
+name = "criterion_prover_security"
+harness = false
+metal = ["lambdaworks-math/metal"]
+
+[[bench]]
 name = "criterion_verifier"
 harness = false
 metal = ["lambdaworks-math/metal"]
@@ -63,6 +68,16 @@ harness = false
 name = "criterion_giza"
 harness = false
 
+
+[[bench]]
+name = "criterion_verifier_security"
+harness = false
+metal = ["lambdaworks-math/metal"]
+
+[[bench]]
+name = "criterion_table"
+harness = false
+metal = ["lambdaworks-math/metal"]
 
 [profile.release]
 lto = true

@@ -37,9 +37,15 @@ fn cairo_benches(c: &mut Criterion) {
 fn run_cairo_bench(group: &mut BenchmarkGroup<'_, WallTime>, benchname: &str, program_path: &str) {
     run_cairo_bench_with_security_level(
         group,
-        benchname,
+        &format!("80_bits/{benchname}"),
         program_path,
         SecurityLevel::Conjecturable80Bits,
+    );
+    run_cairo_bench_with_security_level(
+        group,
+        &format!("128_bits/{benchname}"),
+        program_path,
+        SecurityLevel::Conjecturable128Bits,
     );
 }
 
