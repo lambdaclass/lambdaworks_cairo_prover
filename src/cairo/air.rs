@@ -754,7 +754,6 @@ impl AIR for CairoAIR {
         compute_operand_constraints(&mut constraints, frame);
         compute_register_constraints(&mut constraints, frame);
         compute_opcode_constraints(&mut constraints, frame);
-        enforce_selector(&mut constraints, frame);
         memory_is_increasing(&mut constraints, frame, builtin_offset);
         permutation_argument(&mut constraints, frame, rap_challenges, builtin_offset);
         permutation_argument_range_check(&mut constraints, frame, rap_challenges, builtin_offset);

@@ -134,7 +134,7 @@ fn test_prove_cairo1_program(file_path: &str) {
     assert!(verify_cairo_proof(&proof, &pub_inputs, &proof_options));
 }
 
-#[test_log::test]
+#[test]
 fn test_prove_cairo_simple_program() {
     test_prove_cairo_program(&cairo0_program_path("simple_program.json"), &None);
 }
@@ -295,7 +295,8 @@ fn test_verifier_rejects_proof_with_overflowing_range_check_value() {
         &memory_segments,
     );
 
-    let malicious_trace = build_main_trace(&register_states, &malicious_memory, &mut pub_inputs);
+    let malicious_trace =
+        build_main_trace(&register_states, &mut malicious_memory, &mut pub_inputs);
 
     let proof = generate_cairo_proof(&malicious_trace, &pub_inputs, &proof_options).unwrap();
     assert!(!verify_cairo_proof(&proof, &pub_inputs, &proof_options));

@@ -56,7 +56,7 @@ pub const ADDR_COLUMNS: [usize; 4] = [FRAME_PC, FRAME_DST_ADDR, FRAME_OP0_ADDR, 
 /// so that it has a trace length equal to the closest power of two.
 pub fn build_main_trace(
     register_states: &RegisterStates,
-    memory: &CairoMemory,
+    memory: &mut CairoMemory,
     public_input: &mut PublicInputs,
 ) -> TraceTable<Stark252PrimeField> {
     let mut main_trace = build_cairo_execution_trace(register_states, memory, public_input);
@@ -260,10 +260,15 @@ fn fill_memory_holes(trace: &mut TraceTable<Stark252PrimeField>, memory_holes: &
 /// obtained from the Cairo VM, this is why this function is needed.
 pub fn build_cairo_execution_trace(
     raw_trace: &RegisterStates,
-    memory: &CairoMemory,
+    memory: &mut CairoMemory,
     public_inputs: &PublicInputs,
 ) -> TraceTable<Stark252PrimeField> {
     let n_steps = raw_trace.steps();
+
+    // Overwrite last instruction so that the program ends with an infinite loop
+    let last_state_pc = raw_trace.rows.last().unwrap().pc;
+    let infinite_loop_inst = FE::from_hex("10780017fff7fff").unwrap();
+    memory.data.insert(last_state_pc, infinite_loop_inst);
 
     // Instruction flags and offsets are decoded from the raw instructions and represented
     // by the CairoInstructionFlags and InstructionOffsets as an intermediate representation

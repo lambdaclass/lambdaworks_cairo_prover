@@ -586,7 +586,7 @@ where
     // verify grinding
     let grinding_factor = air.context().proof_options.grinding_factor;
     if challenges.leading_zeros_count < grinding_factor {
-        error!("Grinding factor not satisfied");
+        println!("Grinding factor not satisfied");
         return false;
     }
 
@@ -601,7 +601,7 @@ where
     let timer2 = Instant::now();
 
     if !step_2_verify_claimed_composition_polynomial(&air, proof, &domain, &challenges) {
-        error!("Composition Polynomial verification failed");
+        println!("Composition Polynomial verification failed");
         return false;
     }
 
@@ -616,7 +616,7 @@ where
     let timer3 = Instant::now();
 
     if !step_3_verify_fri(proof, &domain, &challenges) {
-        error!("FRI verification failed");
+        println!("FRI verification failed");
         return false;
     }
 
@@ -632,7 +632,7 @@ where
 
     #[allow(clippy::let_and_return)]
     if !step_4_verify_deep_composition_polynomial(&air, proof, &domain, &challenges) {
-        error!("DEEP Composition Polynomial verification failed");
+        println!("DEEP Composition Polynomial verification failed");
         return false;
     }
 
