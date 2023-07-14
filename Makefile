@@ -53,8 +53,11 @@ benchmarks_parallel_all: $(COMPILED_CAIRO0_PROGRAMS)
 	cargo bench -F parallel
 
 # TODO: add trace and memory rules
+setup_giza_mac:
+	rustup toolchain install nightly-2023-06-19-aarch64-apple-darwin
+
 benchmarks_giza: $(COMPILED_CAIRO0_PROGRAMS)
-	cargo +nightly bench --bench criterion_giza -F "parallel giza"
+	cargo +nightly-2023-06-19 bench --bench criterion_giza -F "parallel giza"
 
 build_metal:
 	cargo b --features metal --release
